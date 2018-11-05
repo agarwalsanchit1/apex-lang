@@ -18,12 +18,14 @@ global class SoqlBuilder implements Soqlable{
     private Boolean         selectSum   = false;
     private Boolean         selectMin   = false;
     private Boolean         selectMax   = false;
-	private String 			aggx		= null;  
+    private String 			aggx		= null;  
     private String          fromx       = null;
     private Condition       wherex      = null;
     private List<OrderBy>   orderByx    = null;
     private String          groupByx    = null;
     private Integer         limitx      = null;
+    private Boolean 		isLockEnabled = null;
+    private Boolean 		isFetchDeletedRecords = null;
         
     global SoqlBuilder(){}
     
@@ -160,6 +162,28 @@ global class SoqlBuilder implements Soqlable{
         this.limitx = limitx; 
         return this;
     }    
+	
+    global SoqlBuilder setIsLockEnabled() {
+        this.isLockEnabled = true; 
+        return this;
+    }
+    
+    global SoqlBuilder selectedAllRows() {
+        this.isFetchDeletedRecords = true;
+        return this;
+    }
+	
+    global SoqlBuilder selectAllDeletedRows() {
+        this.wherex(new FieldCondition('IsDeleted',Operator.EQUALS, true));
+        this.isFetchDeletedRecords = true;
+        return this;
+    }
+    
+    global SoqlBuilder selectAllRowsButNotDeleted() {
+        this.wherex(new FieldCondition('IsDeleted',Operator.EQUALS, false));
+        this.isFetchDeletedRecords = true;
+        return this;
+    }
     
     global String toSoql(){ return this.toSoql(null); }
     
@@ -240,6 +264,12 @@ global class SoqlBuilder implements Soqlable{
         }
         if(limitx != null){
             soql += separator + 'LIMIT ' + limitx;
+        }
+	if (isLockEnabled != null && isLockEnabled == true && (isFetchDeletedRecords == null || isFetchDeletedRecords == false)) {
+            soql += separator + 'FOR UPDATE';
+        }
+        if (isFetchDeletedRecords != null && isFetchDeletedRecords == true) {
+            soql += separator + 'ALL ROWS';
         }
         return soql;
     }
